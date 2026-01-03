@@ -3,30 +3,27 @@ import PyPDF2
 import tkinter as tk
 from tkinter.filedialog import askopenfilename
 
-# create hidden Tk window
+def split_text(text, chunk_size=800):
+    for i in range(0, len(text), chunk_size):
+        yield text[i:i+chunk_size]
+
 root = tk.Tk()
 root.withdraw()
 
-# select PDF
-book = askopenfilename(title="Select PDF file", filetypes=[("PDF files", "*.pdf")])
+book = askopenfilename(filetypes=[("PDF files", "*.pdf")])
 
-if not book:
-    print("No file selected")
-    exit()
-
-# open PDF
-with open(book, 'rb') as pdf_file:
-    pdf_reader = PyPDF2.PdfReader(pdf_file)
-    pages = len(pdf_reader.pages)
-
-    # initialize text-to-speech engine ONCE
+with open(book, 'rb') as f:
+    reader = PyPDF2.PdfReader(f)
     engine = pyttsx3.init()
 
-    for num in range(pages):
-        page = pdf_reader.pages[num]
+    for page_no, page in enumerate(reader.pages, start=1):
         text = page.extract_text()
 
-        if text:  # avoid empty pages
-            engine.say(text)
+        if not text:
+            continue
 
-    engine.runAndWait()
+        print(f"Reading page {page_no}")
+
+        for chunk in split_text(text):
+            engine.say(chunk)
+            engine.runAndWait()
